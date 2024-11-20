@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    container_name: mlflow-server
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./mlruns:/app/mlruns
+      - ./mlflow.db:/app/mlflow.db
+
+  data-ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: data-ingest
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    command: python src/data_ingest.py
+
+  data-prep:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: data-prep
+    depends_on:
+      - data-ingest
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    command: python src/data_preprocess.py
+
+  train-model:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: train-model
+    depends_on:
+      - data-prep
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./mlruns:/app/mlruns  # Tambahkan ini agar MLflow model sinkron
+    command: python src/train.py
+
+  evaluate-model:
+    build:
+      context: .  
+      dockerfile: Dockerfile
+    container_name: evaluate-model
+    depends_on:
+      - train-model  # Bergantung pada train-model karena evaluasi membutuhkan model
+    volumes:
+      - ./data:/app/data  # Sinkronkan folder data untuk file test
+      - ./models:/app/models  # (Opsional) Jika ada model tambahan di folder ini
+      - ./mlruns:/app/mlruns  # Sinkronkan folder untuk mengambil model MLflow
+    command: python src/evaluate.py

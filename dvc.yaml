@@ -1,0 +1,18 @@
+stages:
+  ingest:
+    cmd: python src/data_ingest.py
+    outs:
+      - data/raw/stock_price.csv
+  preprocess:
+    cmd: python src/data_preprocess.py
+    deps: 
+      - data/raw/stock_price.csv
+    outs:
+      - data/processed/train_df.csv
+      - data/processed/test_df.csv
+  # train:
+  #   cmd: python src/train.py
+  #   deps:
+  #     - data/processed/train_df.csv
+  #   outs:
+  #     - 

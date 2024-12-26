@@ -6,3 +6,4 @@ mlflow
 dvc
 yfinance
 matplotlib
+minio

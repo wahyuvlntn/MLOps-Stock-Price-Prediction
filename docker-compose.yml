@@ -45,7 +45,9 @@ services:
       - ./data:/app/data
       - ./models:/app/models
       - ./mlruns:/app/mlruns  # Tambahkan ini agar MLflow model sinkron
+      - ./metadata:/app/metadata
     command: python src/train.py
+    
 
   evaluate-model:
     build:
@@ -58,4 +60,60 @@ services:
       - ./data:/app/data  # Sinkronkan folder data untuk file test
       - ./models:/app/models  # (Opsional) Jika ada model tambahan di folder ini
       - ./mlruns:/app/mlruns  # Sinkronkan folder untuk mengambil model MLflow
+      - ./metadata:/app/metadata
     command: python src/evaluate.py
+
+  monitoring:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monitoring
+    depends_on:
+      - train-model
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./mlruns:/app/mlruns
+      - ./metadata:/app/metadata
+    command: python src/monitoring.py
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"      # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  mlflow-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow_api
+    container_name: mlflow-api
+    depends_on:
+      - mlflow
+    ports:
+      - "5002:5002"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_INSTALL_PLUGINS=marcusolsson-json-datasource
+
+volumes:
+  grafana-data:

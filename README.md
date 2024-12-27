@@ -100,6 +100,7 @@ Semua log proses tersedia di folder `logs` dalam masing-masing kontainer Docker.
 
 ## Troubleshooting
 - Jika ada error terkait `metadata`, pastikan folder `metadata` sudah tersedia di root proyek.
+- Pastikan folder `metadata` dikosongkan terlebih dahulu
 - Jika layanan Docker tidak berjalan, pastikan port yang dibutuhkan tidak digunakan oleh layanan lain.
 
 
